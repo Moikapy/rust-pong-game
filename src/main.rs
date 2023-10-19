@@ -1,4 +1,4 @@
-use bevy::{math::*, prelude::*, sprite::collide_aabb::*, transform};
+use bevy::{math::*, prelude::*, sprite::collide_aabb::*};
 
 //paddle
 const PADDLE_START_Y: f32 = BOTTOM_WALL + 60.;
@@ -42,6 +42,7 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .insert_resource(ClearColor(Color::rgb(0.9, 0.9, 0.9)))
+        .insert_resource(Scoreboard { score: 0 })
         .add_systems(Update, bevy::window::close_on_esc)
         .add_systems(Startup, setup)
         .add_systems(
@@ -75,6 +76,11 @@ struct Collider {
 struct WallBundle {
     sprite_bundle: SpriteBundle,
     collider: Collider,
+}
+
+#[derive(Resource, Clone, Copy)]
+struct Scoreboard {
+    score: usize,
 }
 
 #[derive(Resource, Default, Deref, DerefMut)]
@@ -264,14 +270,16 @@ fn check_ball_collisions(
                     Collision::Right => reflect_x = ball_velocity.x < 0.0,
                     Collision::Top => reflect_y = ball_velocity.y < 0.0,
                     Collision::Bottom => reflect_y = ball_velocity.y > 0.0,
-                    Collision::Inside => { /**/ }
+                    Collision::Inside => { /* do nothing */ }
                 }
+
                 if reflect_x {
                     ball_velocity.x *= -1.;
                 }
                 if reflect_y {
                     ball_velocity.y *= -1.;
                 }
+
                 if let Some(mut brick) = opt_brick {
                     score.score += 1;
                     brick.health = (brick.health - 1).max(0);
@@ -280,6 +288,12 @@ fn check_ball_collisions(
                         commands.entity(other_entity).despawn(); // Despawn the Brick if health is 0 or less
                     }
                 }
+
+                //play sound
+                // commands.spawn(AudioBundle {
+                //     source: collision_sound.clone(),
+                //     settings: PlaybackSettings::DESPAWN,
+                // });
             }
         }
     }
