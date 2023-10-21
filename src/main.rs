@@ -38,6 +38,7 @@ const SCOREBOARD_TEXT_PADDING: Val = Val::Px(5.0);
 const TEXT_COLOR: Color = Color::rgb(0.5, 0.5, 1.0);
 const SCORE_COLOR: Color = Color::rgb(1.0, 0.5, 0.5);
 
+//Main
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
@@ -78,6 +79,11 @@ struct WallBundle {
     collider: Collider,
 }
 
+#[derive(Component)]
+struct Brick {
+    health: i8,
+}
+
 #[derive(Resource, Clone, Copy)]
 struct Scoreboard {
     score: usize,
@@ -104,6 +110,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..Default::default()
         },
         Paddle,
+        Collider { size: PADDLE_SIZE },
     ));
 
     //ball
@@ -119,7 +126,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
                 custom_size: Some(BALL_SIZE),
                 ..Default::default()
             },
-            texture: ball_texture.clone(),
+            texture: ball_texture,
             ..Default::default()
         },
         Ball { size: BALL_SIZE },
@@ -210,6 +217,14 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             },
         });
     }
+
+    //balls
+    {
+        let offset_x = LEFT_WALL + (GAP_BETWEEN_BRICKS_AND_SIDES + BRICK_SIZE.x) * 0.5;
+        let offset_y = BOTTOM_WALL + GAP_BETWEEN_PADDLE_AND_BRICKS.y * 0.5;
+        let bricks_total_width = (RIGHT_WALL - LEFT_WALL) - 2. * GAP_BETWEEN_BRICKS_AND_SIDES;
+        let bricks_total_height
+    }
 }
 
 fn move_paddle(
@@ -246,10 +261,10 @@ fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time_step: Res<
 }
 
 // Collision Check
-fn check_ball_collisions(
+pub fn check_ball_collisions(
     mut commands: Commands,
     mut score: ResMut<Scoreboard>,
-    collision_sound: Res<CollisionSound>,
+    _collision_sound: Res<CollisionSound>,
     mut ball_query: Query<(&mut Velocity, &Transform, &Ball)>,
     mut collider_query: Query<(Entity, &Transform, &Collider, Option<&mut Brick>)>, // Note the mutability for Brick
 ) {

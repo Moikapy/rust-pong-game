@@ -15,4 +15,4 @@ opt-level = 3
 
 
 [dependencies]
-bevy = {version="0.11.3", features=["dynamic_linking"]}
+bevy = { version = "0.11.3", features = ["dynamic_linking","filesystem_watcher"]}
