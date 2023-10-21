@@ -44,7 +44,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .insert_resource(ClearColor(Color::rgb(0.9, 0.9, 0.9)))
         .insert_resource(Scoreboard { score: 0 })
-        .add_systems(Update, bevy::window::close_on_esc)
+        .add_systems(Update, (bevy::window::close_on_esc, update_scoreboard))
         .add_systems(Startup, setup)
         .add_systems(
             FixedUpdate,
@@ -80,9 +80,7 @@ struct WallBundle {
 }
 
 #[derive(Component)]
-struct Brick {
-    health: i8,
-}
+struct Brick;
 
 #[derive(Resource, Clone, Copy)]
 struct Scoreboard {
@@ -93,7 +91,12 @@ struct Scoreboard {
 struct CollisionSound(Handle<AudioSource>);
 
 fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+    // Camera
     commands.spawn(Camera2dBundle::default());
+
+    //Sound
+    let ball_collision_sound = asset_server.load("sounds/breakout_collision.ogg");
+    commands.insert_resource(CollisionSound(ball_collision_sound));
 
     //paddle
     commands.spawn((
@@ -221,10 +224,67 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     //balls
     {
         let offset_x = LEFT_WALL + (GAP_BETWEEN_BRICKS_AND_SIDES + BRICK_SIZE.x) * 0.5;
-        let offset_y = BOTTOM_WALL + GAP_BETWEEN_PADDLE_AND_BRICKS.y * 0.5;
+        let offset_y = BOTTOM_WALL + GAP_BETWEEN_PADDLE_AND_BRICKS + BRICK_SIZE.y * 0.5;
         let bricks_total_width = (RIGHT_WALL - LEFT_WALL) - 2. * GAP_BETWEEN_BRICKS_AND_SIDES;
-        let bricks_total_height
+        let bricks_total_height = (TOP_WALL - BOTTOM_WALL)
+            - GAP_BETWEEN_BRICKS_AND_CEILING
+            - GAP_BETWEEN_PADDLE_AND_BRICKS;
+
+        let rows = (bricks_total_height / (BRICK_SIZE.y + GAP_BETWEEN_BRICKS)).floor() as i32;
+        let columns = (bricks_total_width / (BRICK_SIZE.x + GAP_BETWEEN_BRICKS)).floor() as i32;
+
+        for row in 0..rows {
+            for column in 0..columns {
+                let brick_pos = vec2(
+                    offset_x + column as f32 * (BRICK_SIZE.x + GAP_BETWEEN_BRICKS),
+                    offset_y + row as f32 * (BRICK_SIZE.y + GAP_BETWEEN_BRICKS),
+                );
+
+                commands.spawn((
+                    SpriteBundle {
+                        transform: Transform {
+                            translation: brick_pos.extend(0.0),
+
+                            ..default()
+                        },
+                        sprite: Sprite {
+                            color: BRICK_COLOR,
+                            custom_size: Some(BRICK_SIZE),
+                            ..default()
+                        },
+                        ..default()
+                    },
+                    Brick,
+                    Collider { size: BRICK_SIZE },
+                ));
+            }
+        }
     }
+
+    //Scoreboard
+    commands.spawn(
+        (TextBundle::from_sections([
+            TextSection::new(
+                "Score: ",
+                TextStyle {
+                    font_size: SCOREBOARD_FONT_SIZE,
+                    color: TEXT_COLOR,
+                    ..default()
+                },
+            ),
+            TextSection::from_style(TextStyle {
+                font_size: SCOREBOARD_FONT_SIZE,
+                color: SCORE_COLOR,
+                ..default()
+            }),
+        ])
+        .with_style(Style {
+            position_type: PositionType::Absolute,
+            top: SCOREBOARD_TEXT_PADDING,
+            left: SCOREBOARD_TEXT_PADDING,
+            ..default()
+        })),
+    );
 }
 
 fn move_paddle(
@@ -261,10 +321,10 @@ fn apply_velocity(mut query: Query<(&mut Transform, &Velocity)>, time_step: Res<
 }
 
 // Collision Check
-pub fn check_ball_collisions(
+fn check_ball_collisions(
     mut commands: Commands,
     mut score: ResMut<Scoreboard>,
-    _collision_sound: Res<CollisionSound>,
+    collision_sound: Res<CollisionSound>,
     mut ball_query: Query<(&mut Velocity, &Transform, &Ball)>,
     mut collider_query: Query<(Entity, &Transform, &Collider, Option<&mut Brick>)>, // Note the mutability for Brick
 ) {
@@ -297,19 +357,24 @@ pub fn check_ball_collisions(
 
                 if let Some(mut brick) = opt_brick {
                     score.score += 1;
-                    brick.health = (brick.health - 1).max(0);
+                    //                    brick.health = (brick.health - 1).max(0);
 
-                    if brick.health <= 0 {
-                        commands.entity(other_entity).despawn(); // Despawn the Brick if health is 0 or less
-                    }
+                    //                    if brick.health <= 0 {
+                    commands.entity(other_entity).despawn(); // Despawn the Brick if health is 0 or less
+                                                             //                   }
                 }
 
                 //play sound
-                // commands.spawn(AudioBundle {
-                //     source: collision_sound.clone(),
-                //     settings: PlaybackSettings::DESPAWN,
-                // });
+                commands.spawn(AudioBundle {
+                    source: collision_sound.clone(),
+                    settings: PlaybackSettings::DESPAWN,
+                });
             }
         }
     }
+}
+
+fn update_scoreboard(score: Res<Scoreboard>, mut query: Query<&mut Text>) {
+    let mut text = query.single_mut();
+    text.sections[1].value = score.score.to_string()
 }
