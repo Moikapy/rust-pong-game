@@ -1,5 +1,8 @@
 use bevy::{math::*, prelude::*, sprite::collide_aabb::*};
 
+mod scoreboard;
+use scoreboard::{update_scoreboard,Scoreboard};
+
 //paddle
 const PADDLE_START_Y: f32 = BOTTOM_WALL + 60.;
 const PADDLE_SIZE: Vec2 = Vec2::new(120.0, 20.0);
@@ -81,11 +84,6 @@ struct WallBundle {
 
 #[derive(Component)]
 struct Brick;
-
-#[derive(Resource, Clone, Copy)]
-struct Scoreboard {
-    score: usize,
-}
 
 #[derive(Resource, Default, Deref, DerefMut)]
 struct CollisionSound(Handle<AudioSource>);
@@ -372,9 +370,4 @@ fn check_ball_collisions(
             }
         }
     }
-}
-
-fn update_scoreboard(score: Res<Scoreboard>, mut query: Query<&mut Text>) {
-    let mut text = query.single_mut();
-    text.sections[1].value = score.score.to_string()
 }

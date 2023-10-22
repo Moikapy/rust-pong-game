@@ -1,5 +1,5 @@
 use bevy::{prelude::*};
 #[derive(Resource, Clone, Copy)]
-pub struct Scoreboard_Structs {
-    score: usize,
+pub struct Scoreboard {
+    pub score: usize,
 }
