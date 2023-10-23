@@ -1,3 +1,12 @@
-# Rust-Breakout-Game
+# 2D Bevy Template
 
-> Learning Rust by Following Tutorials Teaching how to make Games.
+> 2D Template to use to build a game from scratch with Bevy and Rust
+
+- Bevy:v 0.11.3
+- Dynamic Linking
+- Asset Hot-Reloading
+- Player Character
+-
+    - Health
+-
+    - Player Movement
