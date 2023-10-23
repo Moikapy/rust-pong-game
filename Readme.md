@@ -10,3 +10,10 @@
     - Health
 -
     - Player Movement
+
+#Get Started
+To Run The Project use the command:
+
+```
+cargo run
+```
