@@ -1,5 +1,5 @@
 [package]
-name = "bevy-breakout"
+name = "bevy-2d-template"
 version = "0.1.0"
 edition = "2021"
 
