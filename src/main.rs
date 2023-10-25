@@ -2,13 +2,16 @@ mod gui;
 use gui::GUI;
 mod player;
 use player::Player;
-use bevy::{math::*, prelude::*,asset::*, utils::Duration};
+mod game_window;
+use bevy::{asset::*, math::*, prelude::*, utils::Duration, window::WindowResized};
+use game_window::{GameWindow, ResolutionSettings};
 
 //player
-const PLAYER_START_Y: f32 = -300.0;
-const PLAYER_SIZE: Vec2 = Vec2::new(50.0, 50.0);
+const PLAYER_START_Y: f32 = 0.0;
+const PLAYER_SIZE: Vec2 = Vec2::new(25.0, 200.0);
 const PLAYER_COLOR: Color = Color::rgb(0.3, 0.3, 0.7);
-const PLAYER_HEALTH: usize = 100;
+const PLAYER_SCORE: usize = 0;
+const AI_SCORE: usize = 0;
 const PLAYER_SPEED: f32 = 250.0;
 
 //gui
@@ -24,14 +27,26 @@ fn main() {
             watch_for_changes: ChangeWatcher::with_delay(Duration::from_millis(200)),
             ..Default::default()
         }))
+        .insert_resource(ResolutionSettings {
+            large: Vec2::new(1920.0, 1080.0),
+            medium: Vec2::new(800.0, 600.0),
+            small: Vec2::new(640.0, 360.0),
+        })
         .insert_resource(ClearColor(Color::rgb(0.9, 0.9, 0.9)))
-        .insert_resource(GUI { health: PLAYER_HEALTH }).insert_resource(Player {health:PLAYER_HEALTH, speed: PLAYER_SPEED })
-        .add_systems(Update, (bevy::window::close_on_esc, GUI::update_gui))
-        .add_systems(Startup, setup)
+        .insert_resource(GUI {
+            player_score: PLAYER_SCORE,
+            ai_score: AI_SCORE,
+        })
         .add_systems(
-            FixedUpdate,
-           Player::movement
+            Update,
+            (
+                bevy::window::close_on_esc,
+                GUI::update_gui,
+                GameWindow::toggle_resolution,
+            ),
         )
+        .add_systems(Startup, setup)
+        .add_systems(FixedUpdate, Player::movement)
         .run();
 }
 
@@ -55,7 +70,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.spawn((
         SpriteBundle {
             transform: Transform {
-                translation: vec3(0., PLAYER_START_Y, 0.),
+                translation: vec3(-600., PLAYER_START_Y, 0.),
                 ..Default::default()
             },
             sprite: Sprite {
@@ -66,18 +81,38 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             ..Default::default()
         },
         Player {
-            health:PLAYER_HEALTH,
-            speed: PLAYER_SPEED
+            speed: PLAYER_SPEED,
+            is_bot: false,
+        },
+        Collider { size: PLAYER_SIZE },
+    ));
+    //AI
+    commands.spawn((
+        SpriteBundle {
+            transform: Transform {
+                translation: vec3(600., PLAYER_START_Y, 0.),
+                ..Default::default()
+            },
+            sprite: Sprite {
+                color: PLAYER_COLOR,
+                custom_size: Some(PLAYER_SIZE),
+                ..Default::default()
+            },
+            ..Default::default()
+        },
+        Player {
+            speed: PLAYER_SPEED,
+            is_bot: true,
         },
         Collider { size: PLAYER_SIZE },
     ));
 
-//
+    //
     //Scoreboard
     commands.spawn(
         TextBundle::from_sections([
             TextSection::new(
-                "HP: ",
+                "",
                 TextStyle {
                     font_size: GUI_FONT_SIZE,
                     color: TEXT_COLOR,
@@ -87,6 +122,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             TextSection::from_style(TextStyle {
                 font_size: GUI_FONT_SIZE,
                 color: SCORE_COLOR,
+
                 ..default()
             }),
         ])
@@ -94,6 +130,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
             position_type: PositionType::Absolute,
             top: GUI_TEXT_PADDING,
             left: GUI_TEXT_PADDING,
+            right: GUI_TEXT_PADDING * -1.0,
             ..default()
         }),
     );
