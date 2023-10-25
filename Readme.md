@@ -1,6 +1,6 @@
-# 2D Bevy Template
+# Rust Pong Game
 
-> 2D Template to use to build a game from scratch with Bevy and Rust
+> A Siimple Pong Game Made to Learn Rust
 
 - Bevy:v 0.11.3
 - Dynamic Linking
